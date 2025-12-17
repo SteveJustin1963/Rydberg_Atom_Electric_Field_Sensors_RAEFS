@@ -219,3 +219,107 @@ grid on;
 - https://en.wikipedia.org/wiki/Tunable_laser
 - https://en.wikipedia.org/wiki/Penning_trap
 - 
+
+
+
+# physical laboratory experiments
+with actual Rydberg atoms (e.g., no vapor cells, lasers, or atomic setups). 
+
+So far we have focuses on **theoretical concepts** and **numerical simulations**, including a 3D Penning trap simulation in Octave/MATLAB that models charged particle motion as an analog for bound/Rydberg-like states.
+
+### To Run the "Experiments" in the Repo
+- **Required "gear"**: Just software — Octave (free) or MATLAB to run the provided simulation code from the README.md.
+- **No physical lab equipment** is needed or mentioned (no optics, lasers, vapor cells, photodetectors, RF sources, electrodes, etc.).
+- **Voltages/frequencies mentioned**: These are purely simulation parameters, not real-world applied voltages:
+  - Quadrupole electric potential: V₀ = 10 V
+  - Magnetic field: B = 1 Tesla (along z-axis)
+  - Other params: Particle charge q = 1.6e-19 C, mass m = 1.67e-27 kg (proton-like), trap size d = 0.01 m, cyclotron frequency ω_c = qB/m, etc.
+- No power supplies, DC/AC/RF voltages, or hardware are specified because it's computational.
+
+### Repository Files
+The repo only has a README.md (with the simulation discussion/code) and one PDF ("Rydberg_Atom_Electric_Field_Sensors_for_Communications_and_Sensing.pdf"), which appears to be the main document. Details on any physical setups, if they exist, would be in that PDF — check it directly on GitHub for figures, schematics, or parts lists (it couldn't be automatically extracted here).
+
+### Typical Real Rydberg Atom E-Field Sensor Experiments
+If you're asking about building/running actual Rydberg atom-based electric field sensors (common in research labs, e.g., with rubidium/cesium atoms), those are advanced atomic physics setups and **not** what's in this repo. Typical requirements include:
+
+- **Lasers** → Two tunable diode lasers (e.g., ~780 nm probe + ~480 nm coupling for Rb Rydberg states), mW-level power, frequency-stabilized.
+- **Vapor cell** → Glass cell with Rb/Cs atoms (often heated to ~40-100°C).
+- **Optics** → Lenses, beamsplitters, mirrors, optical table, anti-vibration.
+- **Detection** → Fast photodiode + transimpedance amplifier, possibly lock-in amplifier.
+- **Field application/calibration** → Electrodes or antennas; calibration fields often use DC/AC voltages from 0-100 V (or higher) across plates to generate known E-fields (mV/cm to V/cm range).
+- **RF/electronics** → Signal generator for test fields (MHz-GHz), low-noise power supplies, data acquisition (oscilloscope, spectrum analyzer).
+- **Safety/environment** → Laser safety gear, vacuum (sometimes), magnetic shielding.
+
+These setups are expensive/complex (university or national lab level) and sensitive to noise/vibrations. If that's what you meant, clarify or point to a specific reference/paper — this repo doesn't provide build details for that.
+
+//
+
+# Building a functional **Rydberg atom electric field sensor** 
+(using electromagnetically induced transparency/Autler-Townes splitting in a room-temperature vapor cell) in a university lab is a major advanced atomic physics project. It typically costs **$200,000–$500,000+** for a basic setup (dominated by lasers), requires expertise in laser stabilization, optics alignment, and vacuum/electronics, and takes months to years to commission. No simple "open-source" full hardware blueprint exists, but many labs follow similar designs inspired by NIST, Princeton, or commercial precursors.
+
+### Core Principle
+Two counter-propagating lasers excite alkali atoms (usually ⁸⁷Rb) in a vapor cell to a Rydberg state via a ladder scheme:
+- Probe: ~780 nm (5S → 5P)
+- Coupling: ~480 nm (5P → Rydberg nS/nD)
+
+An applied RF/DC E-field shifts/splits the EIT signal, read out optically on a photodiode.
+
+### Essential Hardware List with Examples and Likely Costs
+Costs are approximate (2025 USD, new from vendors like Toptica, Thorlabs, Vescent; university discounts ~20-30% off). Used/refurbished equipment can cut 30-50%.
+
+#### 1. Lasers (biggest expense)
+- **780 nm probe laser** (tunable ECDL, narrow linewidth <1 MHz, ~50-100 mW):
+  - Example: Toptica DL pro or TA pro (~75-105 mW versions).
+  - Cost: $30,000–$60,000 (including frequency stabilization electronics).
+- **480 nm coupling laser** (higher power needed, often frequency-doubled from ~960 nm):
+  - Example: Toptica TA-SHG pro or DLC Rydberg Rb II (~500-1000 mW).
+  - Cost: $50,000–$100,000+ (doubling cavity + IR laser + amplifier).
+- **Frequency stabilization** (locks to atomic transitions; often saturated absorption or transfer cavity):
+  - Example: Toptica DLC pro locks or wavemeter.
+  - Cost: $20,000–$40,000.
+
+#### 2. Vapor Cell and Housing
+- **Rubidium vapor cell** (glass, ~75 mm long, often with stem for Rb reservoir):
+  - Example: Thorlabs GC19075-RB (natural Rb) or GC19075-RB87 (pure ⁸⁷Rb), quartz for better UV/IR transmission.
+  - Cost: $1,000–$3,000.
+- **Cell heater/mount** (temperature control ~40-100°C for vapor density):
+  - Example: Thorlabs GCH25-75 heater + TC300 controller.
+  - Cost: $1,500–$3,000.
+
+#### 3. Optics and Beam Delivery
+- Optical table (vibration-isolated) + breadboards/posts/mirrors/lenses/beamsplitters/PBS/AOMs (for frequency shifting/locking).
+  - Cost: $20,000–$50,000 (full setup; Thorlabs/Newport).
+- Optical isolators, fibers (optional for portable probe), waveplates.
+  - Cost: $10,000–$20,000.
+
+#### 4. Detection and Electronics
+- Fast photodiode (balanced for noise reduction) + transimpedance amplifier.
+  - Example: Thorlabs or Newport high-speed PDs.
+  - Cost: $2,000–$5,000.
+- Oscilloscope/spectrum analyzer/lock-in amplifier (for signal readout).
+  - Cost: $5,000–$20,000.
+- RF source for calibration (signal generator + horn antenna).
+  - Cost: $5,000–$15,000.
+
+#### 5. Optional/Advanced
+- Magnetic shielding (mu-metal) and coils (for zeroing B-fields).
+  - Cost: $5,000–$10,000.
+- Data acquisition (DAQ card + computer control).
+  - Cost: $2,000–$5,000.
+
+**Total likely cost for a minimal working university setup**: $200,000–$400,000 (lasers ~70%). Full professional-grade (e.g., with fiber-coupling, auto-locking): $500,000+.
+
+### Voltages and Power Supplies
+- No high voltages for the atoms themselves (room-temperature vapor, no trap).
+- DC calibration fields: Low-voltage power supplies (0-100 V) across electrodes near/inside cell for ~V/cm fields.
+- RF test fields: Standard signal generator (mW-level into antenna).
+- Lasers need stable current/temperature controllers (included with systems).
+
+### Recommendations for a University Lab
+- Start with a 780 nm system for basic EIT/spectroscopy (~$100k), then add 480 nm.
+- Collaborate or use shared facilities (many AMO groups have parts).
+- Commercial options emerging (e.g., Rydberg Technologies probes, but not cheap/open).
+- Papers from NIST (Holloway group) or reviews provide schematics—replicate those.
+
+This is not plug-and-play; alignment and stabilization are tricky. If your lab has cold atom experience, it's feasible; otherwise, consider simulations or partnering. Clarify if you want references to specific build papers!
+//
