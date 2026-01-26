@@ -19,6 +19,9 @@
 - [Physical Laboratory Experiments](#physical-laboratory-experiments)
   - [Building a Functional Rydberg Atom Electric Field Sensor](#building-a-functional-rydberg-atom-electric-field-sensor)
 - [Low-Cost Alternatives for RF Detection](#low-cost-alternatives-for-rf-detection)
+- [RF Difference Detection and Antenna Array Experiments](#rf-difference-detection-and-antenna-array-experiments)
+- [Using Three Loop Antennas for RF Difference Detection Experiments](#using-three-loop-antennas-for-rf-difference-detection-experiments)
+- [Hybrid Rydberg-Loop Antenna Array Systems](#hybrid-rydberg-loop-antenna-array-systems)
 - [Phonon Science Applications](#phonon-science-applications)
 - [Holstein Hamiltonian Model](#holstein-hamiltonian-model)
   - [Appendix 1: Mathematical Treatment](#appendix-1-mathematical-treatment)
@@ -1365,6 +1368,528 @@ For applications not requiring nanoscale resolution, use bulk diamond with high 
 - **Sensitivity:** 10× better (more NV centers → more signal)
 - **Spatial resolution:** ~10-100 µm (bulk measurement)
 - **Setup:** Simpler - just illuminate whole diamond, collect bulk fluorescence
+
+---
+
+## RF Difference Detection and Antenna Array Experiments
+
+### Basic Concept: Using Antenna Offsets for RF Difference Detection
+
+With two small antennas (possibly receiving ones) placed near each other but slightly offset in position, we can configure a setup where a third antenna detects the difference (e.g., phase or amplitude difference) in an incoming RF signal. This is a core idea in RF engineering, particularly in **direction finding (DF)**, **interferometry**, or **phased array systems**.
+
+#### Why Two Offset Antennas Matter
+
+If the antennas are separated by a small distance $d$ (e.g., a fraction of the wavelength $\lambda$ of the RF signal), an incoming plane wave at an angle $\theta$ from the baseline creates a path length difference of $d \sin \theta$. This translates to a phase shift:
+
+$$\delta = \frac{2\pi d \sin \theta}{\lambda}$$
+
+By comparing the signals from the two antennas, you can compute this difference.
+
+#### Role of a Third Antenna
+
+A third antenna isn't strictly necessary for basic difference detection (you can process the two signals directly), but it can enhance the setup in several ways:
+
+1. **Ambiguity resolution:** With only two antennas, phase differences can be ambiguous (e.g., multiple possible $\theta$ values for the same $\delta$). A third antenna, placed non-collinearly (e.g., forming a triangle), provides an additional baseline to triangulate and resolve this.
+
+2. **Reference or calibration:** The third could act as a phase reference, especially if the incoming RF is weak or noisy, or to subtract common-mode noise/interference affecting all antennas.
+
+3. **Improved accuracy:** In array processing, three antennas allow for better beamforming or nulling, where you electronically steer the array to focus on the difference signal.
+
+4. **Diversity:** If the third is positioned differently, it can help detect polarization differences or multipath effects.
+
+### Practical Setup Examples
+
+#### Traditional RF Setup
+
+**Hardware:**
+- Two small receiving antennas (e.g., monopoles) spaced ~0.1–0.5$\lambda$ apart (for VHF/UHF bands, that's cm to meters)
+- Connect them to a receiver chain with mixers or ADCs to digitize the signals
+
+**Processing:**
+1. Downconvert both signals to baseband
+2. Use a phase detector (like a multiplier or IQ demodulator) to extract $\delta$
+
+**Third antenna integration:** Add it as a reference—mix its signal with the difference from the first two to isolate the offset-induced effect. This could detect DOA with ~1–5° accuracy, depending on frequency and spacing.
+
+**Challenges:** Calibration for mutual coupling (antennas interfering with each other), noise, and ensuring the offset doesn't exceed $\lambda/2$ to avoid aliasing.
+
+#### Using Rydberg Atom Sensors
+
+These vapor-cell sensors are essentially tiny, optical-readout "antennas" (~1–10 cm size) that detect RF E-fields with extreme sensitivity (down to mV/m) and broadband coverage (kHz to THz).
+
+**Two offset sensors:** Place two cells close but slightly offset (e.g., 1–10 cm apart). Each measures the local E-field amplitude and phase via laser probing and EIT. The offset creates a measurable phase difference for incoming RF waves, enabling DOA estimation or wavefront mapping.
+
+**Third sensor for difference detection:** Position a third cell nearby (e.g., equidistant or in an L-shape). Use it to:
+- Compute pairwise differences (e.g., sensor1 - sensor2, then compare to sensor3)
+- Enable vector E-field sensing (full 3D field reconstruction)
+
+**Advantages over traditional antennas:**
+- No metal parts to perturb the field
+- Higher precision (phase resolution <1° possible)
+- Smaller size for dense arrays
+- SI-traceable measurements without calibration artifacts
+
+**How to implement:** Digitize the optical outputs from each cell, then use signal processing (e.g., Fourier transforms) to extract differences. Labs/companies (e.g., via DARPA programs) are prototyping arrayed versions for applications like radar or communications.
+
+### Potential Applications
+
+- **Direction finding:** Track incoming RF sources (e.g., drones, jammers)
+- **Interference detection:** Spot subtle differences in multipath signals
+- **Sensing gradients:** For near-field RF, detect field variations across space
+
+---
+
+## Using Three Loop Antennas for RF Difference Detection Experiments
+
+Loop antennas are ideal for these kinds of experiments because they primarily sense the **magnetic component** of electromagnetic (EM) waves, making them suitable for low-to-medium frequency RF (e.g., HF to UHF bands, like 3–300 MHz), near-field measurements, and setups where you want to minimize electric field interference. They're compact, directional (with a figure-8 pattern), and can be made from simple wire coils.
+
+### Basic Setup Components
+
+1. **Three loop antennas:** Make or buy small loops (e.g., 10–50 cm diameter, multi-turn wire coils for better sensitivity). Position them close but offset (e.g., 10–50 cm apart, or ~0.1–0.5 wavelengths of your target RF frequency to capture phase differences without too much ambiguity).
+
+2. **Receivers:** Connect each loop to a low-noise amplifier (LNA) and then to a receiver (e.g., SDR dongles synced via a common clock for phase coherence).
+
+3. **Processing:** Use software like GNU Radio, MATLAB, or Python (with libraries like NumPy/SciPy) to digitize signals, compute differences, and visualize results.
+
+4. **Test source:** Two dipoles transmitting the same signal but with a slight phase or position offset to create an interference pattern.
+
+**Safety note:** If dealing with transmitting antennas, keep power low (<1W) to avoid interference or regulatory issues.
+
+### Experiment 1: Direction Finding (DOA Estimation) via Phase Differences
+
+This detects the angle of arrival of an incoming RF signal by measuring phase shifts across the array.
+
+#### Setup
+
+1. Arrange the three loops in a **triangular formation** (e.g., equilateral triangle with sides ~λ/4, where λ is the wavelength). This provides two baselines for phase comparison, reducing ambiguity compared to just two antennas.
+
+2. Orient all loops in the same plane (e.g., vertical for horizontal magnetic fields).
+
+3. Transmit a test RF signal (e.g., 433 MHz ISM band tone) from your two offset transmitters, positioned at a known angle/distance.
+
+#### How It Works
+
+1. The incoming wave hits each loop at slightly different times due to the offsets, creating phase differences ($\delta$) between pairs (e.g., loop1 vs. loop2, loop1 vs. loop3).
+
+2. Digitize the signals and use correlation or IQ data to calculate:
+   $$\delta = \arg(S_2 / S_1)$$
+   where $S_1$ and $S_2$ are complex signals from two loops.
+
+3. With three loops, solve for the direction $\theta$ using trigonometry:
+   $$\theta = \arcsin\left(\frac{\delta \lambda}{2\pi d}\right)$$
+   where $d$ is the baseline distance. The third loop confirms and refines the estimate.
+
+#### What You Detect
+
+The "difference" is the phase offset, revealing the signal's direction (accuracy ~5–10° with simple setups). If your transmitters are slightly off, this simulates a wavefront tilt, and the array detects it as a non-zero $\theta$.
+
+**Tips:** Calibrate for mutual coupling (loops can interfere). Start with simulations in Python: Model wave propagation with $e^{jkr}$ phases.
+
+### Experiment 2: Magnetic Field Gradient Mapping (Near-Field Differences)
+
+For detecting subtle variations in RF magnetic fields, like from closely spaced transmitters.
+
+#### Setup
+
+1. Place the three loops in a line or cluster near your two transmitting antennas (e.g., within 1–2 wavelengths, in the near-field zone).
+
+2. Use one loop as a reference (central), and the other two offset slightly (e.g., +x and -x directions) to measure gradients.
+
+#### How It Works
+
+1. Each loop outputs a voltage proportional to the local magnetic field $H$:
+   $$V \approx \mu N A \omega H$$
+   where $N$ = turns, $A$ = area, $\omega$ = frequency.
+
+2. Amplify and measure amplitude/phase from each. Compute differences:
+   $$\Delta H_x = \frac{H_{\text{left}} - H_{\text{right}}}{\text{distance}}$$
+   using the third for y- or z-axis if oriented differently.
+
+3. For an incoming RF from your offset transmitters, the gradients show interference patterns (e.g., nulls or peaks due to phase cancellation).
+
+#### What You Detect
+
+Amplitude differences highlight field inhomogeneities—e.g., if transmitters are slightly off-frequency, you'll see beat patterns; if off-position, spatial asymmetries.
+
+**Tips:** Good for low frequencies (<30 MHz) where loops excel. Add Faraday shielding to reduce E-field pickup.
+
+### Experiment 3: Basic Phased Array Beamforming for Signal Enhancement/Nulling
+
+This uses the array to electronically "steer" sensitivity, detecting differences by suppressing or amplifying parts of the incoming RF.
+
+#### Setup
+
+1. Configure the three loops as a small array (e.g., linear with equal spacing).
+
+2. Feed signals into a digital beamformer (e.g., via SDRs and software).
+
+#### How It Works
+
+1. Apply phase shifts digitally to the signals (e.g., multiply by $e^{j\phi}$ for each channel).
+
+2. Sum them:
+   $$S_{\text{total}} = S_1 + S_2 e^{j\phi_2} + S_3 e^{j\phi_3}$$
+
+3. Steer the beam toward your transmitters' direction to maximize the difference signal (e.g., null out interference from one transmitter while enhancing the other).
+
+#### What You Detect
+
+Phase/amplitude differences allow you to isolate the "offset" effect—e.g., if transmitters are slightly detuned, beamforming separates their signals.
+
+**Tips:** Requires phase-locked receivers. For advanced twists, tie in Rydberg sensors (from earlier sections) by replacing one loop with a vapor cell for hybrid quantum-classical comparison.
+
+### Implementation Notes
+
+These experiments scale from DIY (cost ~$50–200 for parts) to lab-grade. Key considerations:
+
+- **Frequency range:** Choose based on your application (HF for long-range, VHF/UHF for local experiments)
+- **Synchronization:** For phase-coherent measurements, ensure all receivers share a common clock reference
+- **Calibration:** Account for systematic phase offsets in cables, amplifiers, and receivers
+- **Regulatory compliance:** Always check local regulations for transmitting experiments
+
+For heterodyne detection (frequency offset approach): If the "slightly off" refers to frequency offset (not position), this could be about heterodyne detection: two antennas receiving slightly detuned signals, mixing to produce a beat frequency at the difference, and the third detecting that low-frequency output.
+
+**For hands-on demonstrations:** You could simulate these concepts in Python with libraries like NumPy/SciPy (modeling wave propagation and phase shifts) before building physical hardware.
+
+---
+
+## Hybrid Rydberg-Loop Antenna Array Systems
+
+An exciting frontier is combining **Rydberg atom electric field sensors** with **loop antenna magnetic field detectors** into hybrid arrays. This approach leverages the complementary strengths of both technologies to achieve unprecedented RF sensing capabilities.
+
+### Why Combine Rydberg Sensors with Loop Antennas?
+
+#### Complementary Field Sensing
+
+The key insight is that electromagnetic waves have both **electric (E)** and **magnetic (B)** field components that are orthogonal and coupled:
+
+$$\vec{E} = c\vec{B} \times \hat{k}$$
+
+where $c$ is the speed of light and $\hat{k}$ is the propagation direction.
+
+- **Rydberg sensors**: Exquisitely sensitive to E-fields (down to µV/cm), measured via EIT/Autler-Townes splitting
+- **Loop antennas**: Primarily sensitive to B-fields (magnetic flux through the loop)
+
+By measuring both simultaneously at the same spatial location, you get:
+1. **Redundancy and validation**: Cross-check measurements using Maxwell's equations
+2. **Polarization analysis**: Determine wave polarization (linear, circular, elliptical)
+3. **Near-field vs far-field discrimination**: In near-field, E and B are not simply related by impedance of free space (377 Ω)
+4. **Vector field reconstruction**: Combine multiple measurements to map full 3D electromagnetic field structure
+
+#### Practical Advantages
+
+1. **Phase reference**: Loop antennas provide robust, phase-coherent timing references for synchronizing multiple Rydberg sensors
+2. **Dynamic range extension**: Use loops for strong fields (>1 V/cm) where Rydberg atoms might saturate
+3. **Frequency coverage**: Loops excel at lower frequencies (kHz-MHz), Rydberg at higher (MHz-THz), covering full spectrum
+4. **Calibration**: Loop antennas have well-known, calculable responses - use them to calibrate absolute field strengths for Rydberg sensors
+5. **Cost reduction**: Start with loop arrays, then upgrade strategic positions with Rydberg sensors
+
+### Hybrid Array Architectures
+
+#### Architecture 1: Interleaved E/B Array
+
+**Configuration:**
+```
+Layout (top view):
+    L1 ---- R1 ---- L2 ---- R2 ---- L3
+    |               |               |
+   [Loop]      [Rydberg]        [Loop]
+   (B-field)    (E-field)       (B-field)
+```
+
+- Alternate loop antennas (L) and Rydberg vapor cells (R) in a linear or 2D grid
+- Spacing: ~λ/4 to λ/2 for phase coherence at target frequency
+- Each position measures either E or B field
+
+**Benefits:**
+- Full vector EM field mapping with spatial resolution ~10 cm
+- Phase differences reveal wavefront structure and direction of arrival
+- Detect interference patterns, multipath, and near-field sources
+
+**Use cases:**
+- Direction finding with <1° accuracy
+- Near-field antenna testing
+- RF threat detection (drones, jammers)
+
+#### Architecture 2: Co-located E/B Sensors
+
+**Configuration:**
+```
+Single sensing node:
+    ┌─────────────────┐
+    │  Vapor Cell (R) │ ← Measures E-field
+    │  ┌─────────┐    │
+    │  │ Loop (L)│    │ ← Loop wrapped around cell
+    │  └─────────┘    │    Measures B-field
+    └─────────────────┘
+```
+
+- Place small loop antenna (10-20 cm diameter) concentrically around Rydberg vapor cell
+- Both measure the same spatial point simultaneously
+- Orient loop axis perpendicular to laser beams to avoid optical interference
+
+**Benefits:**
+- True vector field measurement at single point
+- Directly verify $E = cB$ relationship (far-field) or detect near-field deviations
+- Compact, portable sensor head
+- Immune to position calibration errors
+
+**Implementation:**
+1. Use non-magnetic loop materials (copper, aluminum) to avoid perturbing Rydberg atoms
+2. Keep loop current return path symmetric to minimize stray fields at vapor cell
+3. Synchronize measurements: sample both E and B at same time (shared clock/trigger)
+
+**Use cases:**
+- Portable RF power density mapping
+- EMC/EMI testing
+- Bioelectromagnetics (SAR measurements)
+
+#### Architecture 3: Loop-Referenced Rydberg Array
+
+**Configuration:**
+```
+    Master Loop (phase reference)
+           |
+           | RF signal fed to all Rydberg sensors
+           |
+    ┌──────┴──────┬──────────┬──────────┐
+    R1            R2         R3         R4
+  [Rydberg]    [Rydberg]  [Rydberg]  [Rydberg]
+  (E-field)    (E-field)  (E-field)  (E-field)
+```
+
+- Single loop antenna acts as **master phase reference**
+- Distribute its signal (via low-loss coax) to all Rydberg sensor locations
+- Each Rydberg sensor measures local E-field and compares phase to master loop
+
+**Benefits:**
+- Solves the "phase synchronization problem" for distributed Rydberg arrays
+- All sensors locked to same RF phase reference (no clock drift between nodes)
+- Enables coherent beamforming across large apertures (>10 m)
+
+**Implementation:**
+1. Use high-Q resonant loop at target frequency (e.g., 7 MHz, 433 MHz)
+2. Amplify loop output and distribute via matched-length cables or fiber-optic links
+3. At each Rydberg sensor, mix loop signal with optical EIT readout for phase extraction
+4. Digital signal processing combines all channels for DOA, beamforming, or MIMO
+
+**Use cases:**
+- Large-aperture RF imaging (like radio astronomy, but with quantum sensors)
+- Distributed spectrum sensing for cognitive radio
+- Quantum radar prototypes
+
+### Practical Implementation: Three-Sensor Hybrid Demonstrator
+
+Here's a concrete design combining ideas from the loop antenna experiments with Rydberg sensing:
+
+#### Hardware Configuration
+
+**Sensor Node Design (build 3 identical units):**
+
+| Component | Specification | Purpose |
+|-----------|--------------|---------|
+| **Rydberg vapor cell** | Rb-87, 75 mm length, heated to 55°C | E-field sensing via EIT |
+| **Probe laser** | 780 nm ECDL, ~50 mW, locked to D2 line | Lower transition (5S→5P) |
+| **Coupling laser** | 480 nm, ~500 mW (or use ground-state method to avoid this) | Upper transition (5P→Rydberg) for full Rydberg, OR skip for low-cost ground-state approach |
+| **Loop antenna** | 20 cm diameter, 10 turns, wrapped around cell | B-field sensing at same point as E-field |
+| **Low-noise amplifier** | 50Ω input, 40 dB gain, wideband (1-1000 MHz) | Amplify loop signal |
+| **Photodiode** | Fast Si detector, >10 MHz bandwidth | Detect EIT signal from vapor cell |
+| **Data acquisition** | Synchronized ADC, 16-bit, 100 MS/s, shared clock | Digitize both E and B signals simultaneously |
+
+**Array Geometry (triangular):**
+```
+         Sensor 1 (S1)
+            /\
+           /  \
+          /    \
+    λ/4  /      \  λ/4
+        /        \
+       /          \
+      /____________\
+     S2            S3
+           λ/4
+```
+
+- Equilateral triangle with sides = λ/4 at target frequency
+- For 433 MHz: λ = 69 cm → sides ≈ 17 cm
+- For 7 MHz: λ = 43 m → sides ≈ 10 m (or scale down, accept ambiguity)
+
+#### Experimental Procedure
+
+**Phase 1: Calibration**
+
+1. **Generate known test signal:**
+   - Place transmitting dipole at known location (e.g., 5 meters away, 30° from array boresight)
+   - Transmit CW tone at 433 MHz, 1 W power
+   - Calculate expected E and B fields at each sensor location using Friis equation
+
+2. **Measure E-field with Rydberg sensors:**
+   - Observe EIT signal on each photodiode
+   - Record amplitude (proportional to E-field strength) and phase (from RF frequency modulation)
+   - Verify linear response: vary transmitter power, check E-field scales correctly
+
+3. **Measure B-field with loop antennas:**
+   - Digitize voltage from each loop antenna's LNA output
+   - Extract amplitude and phase using FFT or lock-in detection
+   - Calibrate loop response: $V_{\text{loop}} = -j\omega \mu_0 N A B$ where $N$ = turns, $A$ = loop area
+
+4. **Cross-validate E and B:**
+   - In far-field, verify $E = cB$ (impedance of free space = 377 Ω)
+   - If mismatch, check for near-field effects or calibration errors
+
+**Phase 2: Direction Finding Experiments**
+
+1. **Move transmitter to unknown location**
+2. **Measure phase differences:**
+   - Between Rydberg sensors: $\Delta\phi_E$ (from E-field array)
+   - Between loop antennas: $\Delta\phi_B$ (from B-field array)
+3. **Solve for direction of arrival (DOA):**
+   - Use phase interferometry: $\theta = \arcsin(\Delta\phi \lambda / 2\pi d)$
+   - Compare DOA from E-array vs B-array (should agree in far-field)
+   - Averaging both gives improved accuracy
+4. **Expected performance:**
+   - Angular resolution: ~2-5° (limited by baseline length and SNR)
+   - Ambiguity: ±180° (need additional sensors or constraints to resolve)
+
+**Phase 3: Near-Field Vector Mapping**
+
+1. **Place transmitter in near-field** (distance < λ)
+2. **Measure E and B at all three positions simultaneously**
+3. **Reconstruct vector fields:**
+   - E-field: $\vec{E}(x,y,z)$ from Rydberg measurements
+   - B-field: $\vec{B}(x,y,z)$ from loop measurements
+4. **Analyze relationship:**
+   - In near-field, $E/B \neq 377$ Ω (reactive vs radiative components)
+   - Detect standing waves, multipath interference
+   - Map field gradients: $\nabla \times \vec{E} = -\partial \vec{B}/\partial t$
+
+**Phase 4: Beamforming and Nulling**
+
+1. **Digital beamforming using E-field array:**
+   - Apply complex weights $w_n e^{j\phi_n}$ to each Rydberg sensor output
+   - Sum: $S_E = \sum_{n=1}^{3} w_n S_n e^{j\phi_n}$
+   - Steer beam to maximize signal from desired direction, null others
+
+2. **Cross-check with B-field array:**
+   - Repeat beamforming using loop antenna signals
+   - Compare beam patterns from E vs B arrays
+   - Hybrid beamforming: combine both for improved SNR and robustness
+
+### Quantum Advantages of Hybrid Arrays
+
+#### SI-Traceable Absolute Calibration
+
+Rydberg sensors provide **absolute E-field measurements** traceable to fundamental constants:
+- Atomic transition frequencies known to 15+ digits (from atomic clocks)
+- Autler-Townes splitting directly related to E-field via Stark effect
+- No need for calibration against standard antennas
+
+Use this to **calibrate loop antennas** in-situ:
+1. Measure same field with both Rydberg sensor (absolute) and loop antenna (relative)
+2. Determine loop's true effective area and gain without anechoic chamber
+3. Now loop antenna becomes a calibrated standard for other measurements
+
+#### Phase Coherence and Quantum Entanglement (Future)
+
+Advanced concept: Use Rydberg atoms in **superposition states** across multiple sensors for quantum-enhanced sensing:
+- Atoms in entangled states can beat classical signal-to-noise limits (Heisenberg limit vs shot noise limit)
+- Distributed entanglement across array enables "quantum beamforming"
+- Sensitivity improvement: factor of $\sqrt{N}$ for $N$ sensors (classical) → $N$ (quantum)
+
+**Current status:** Lab demonstrations exist for single-point quantum sensing, but distributed quantum sensor arrays remain experimental (DARPA programs exploring this).
+
+### Cost-Performance Trade-offs
+
+| Array Type | Total Cost | E-Field Sensitivity | B-Field Sensitivity | Best For |
+|------------|-----------|-------------------|-------------------|----------|
+| **3× Loop Antennas Only** | $200-500 | N/A | 1-10 pT (magnetic) | DIY, education, B-field focus |
+| **3× Ground-State Rb + 3× Loops** | $25k-35k | 1-10 mV/cm | 1-10 pT | Research labs, vector sensing |
+| **3× Full Rydberg + 3× Loops** | $600k-1.5M | 1-10 µV/cm | 1-10 pT | Ultimate sensitivity, national labs |
+| **1× Rydberg + 2× Loops (hybrid)** | $200k-250k | 1-10 µV/cm | 1-10 pT | Cost-optimized, proof-of-concept |
+
+**Recommended starting point:** Build the 3× loop array first ($200-500), then upgrade one position to ground-state Rb sensor ($8k-10k) to explore hybrid concepts before committing to full Rydberg systems.
+
+### Software and Signal Processing
+
+For hybrid arrays, you'll need to:
+
+1. **Synchronize data acquisition** from multiple heterogeneous sensors (optical photodiodes + RF amplifiers)
+2. **Phase alignment** between different measurement modalities
+3. **Vector field reconstruction** algorithms
+
+**Example Python workflow:**
+
+```python
+import numpy as np
+from scipy.fft import fft, fftfreq
+
+# Synchronized sampling at 100 MS/s
+t = np.linspace(0, 1e-3, 100000)  # 1 ms capture
+
+# Rydberg sensor outputs (E-field, from photodiode signals)
+E1 = photodiode_1_data  # Sensor 1
+E2 = photodiode_2_data  # Sensor 2
+E3 = photodiode_3_data  # Sensor 3
+
+# Loop antenna outputs (B-field, from LNA signals)
+B1 = loop_1_data  # Sensor 1
+B2 = loop_2_data  # Sensor 2
+B3 = loop_3_data  # Sensor 3
+
+# Extract phase and amplitude at target frequency (e.g., 433 MHz)
+def extract_signal(data, t, f_target=433e6):
+    fft_data = fft(data)
+    freqs = fftfreq(len(t), t[1]-t[0])
+    idx = np.argmin(np.abs(freqs - f_target))
+    amplitude = np.abs(fft_data[idx]) * 2 / len(data)
+    phase = np.angle(fft_data[idx])
+    return amplitude, phase
+
+# Process all sensors
+E1_amp, E1_phase = extract_signal(E1, t)
+E2_amp, E2_phase = extract_signal(E2, t)
+E3_amp, E3_phase = extract_signal(E3, t)
+
+B1_amp, B1_phase = extract_signal(B1, t)
+B2_amp, B2_phase = extract_signal(B2, t)
+B3_amp, B3_phase = extract_signal(B3, t)
+
+# Phase differences for DOA
+delta_phi_E_12 = E1_phase - E2_phase
+delta_phi_E_13 = E1_phase - E3_phase
+
+delta_phi_B_12 = B1_phase - B2_phase
+delta_phi_B_13 = B1_phase - B3_phase
+
+# Solve for angle of arrival (simplified, assumes 1D)
+wavelength = 3e8 / 433e6  # ~69 cm
+baseline = 0.17  # 17 cm spacing
+
+theta_E = np.arcsin(delta_phi_E_12 * wavelength / (2 * np.pi * baseline))
+theta_B = np.arcsin(delta_phi_B_12 * wavelength / (2 * np.pi * baseline))
+
+print(f"DOA from E-field array: {np.degrees(theta_E):.1f}°")
+print(f"DOA from B-field array: {np.degrees(theta_B):.1f}°")
+print(f"Average (hybrid): {np.degrees((theta_E + theta_B)/2):.1f}°")
+
+# Verify far-field relationship E = cB (impedance check)
+Z0 = 377  # Ohms, impedance of free space
+for i in range(3):
+    E_measured = [E1_amp, E2_amp, E3_amp][i]
+    B_measured = [B1_amp, B2_amp, B3_amp][i]
+    Z_measured = E_measured / (B_measured * 3e8)
+    print(f"Sensor {i+1}: E/cB = {Z_measured:.0f} Ω (expect 377 Ω in far-field)")
+```
+
+### Research Directions
+
+1. **Quantum-classical hybrid sensing:** Combine quantum (Rydberg) precision with classical (loop) robustness
+2. **Self-calibrating arrays:** Use Rydberg's absolute calibration to continuously tune loop antenna responses
+3. **AI-enhanced field reconstruction:** Machine learning to map sparse measurements (3 sensors) to full 3D field distribution
+4. **Portable hybrid sensors:** Package co-located Rydberg cell + loop into handheld probe
+5. **Time-domain applications:** Pulsed radar, transient detection, spread-spectrum signals
+
+This hybrid approach represents a practical path from accessible DIY electronics (loops) to cutting-edge quantum sensing (Rydberg), allowing incremental development and learning at each stage.
 
 ---
 
