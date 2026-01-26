@@ -18,6 +18,7 @@
   - [Epitrochoidal Motion](#epitrochoidal-motion)
 - [Physical Laboratory Experiments](#physical-laboratory-experiments)
   - [Building a Functional Rydberg Atom Electric Field Sensor](#building-a-functional-rydberg-atom-electric-field-sensor)
+- [Low-Cost Alternatives for RF Detection](#low-cost-alternatives-for-rf-detection)
 - [Phonon Science Applications](#phonon-science-applications)
 - [Holstein Hamiltonian Model](#holstein-hamiltonian-model)
   - [Appendix 1: Mathematical Treatment](#appendix-1-mathematical-treatment)
@@ -382,6 +383,1098 @@ Costs are approximate (2025 USD, new from vendors like Toptica, Thorlabs, Vescen
 - Papers from NIST (Holloway group) or reviews provide schematics—replicate those.
 
 This is not plug-and-play; alignment and stabilization are tricky. If your lab has cold atom experience, it's feasible; otherwise, consider simulations or partnering. Clarify if you want references to specific build papers!
+
+---
+
+## Low-Cost Alternatives for RF Detection
+
+While full Rydberg atom systems require $200k-$500k investments, several low-cost approaches can achieve useful RF/E-field sensing using atomic systems. These alternatives sacrifice some sensitivity but provide practical entry points for research, education, and specific applications.
+
+### 1. Ground-State Hyperfine Transitions (Recommended: $5k-$10k)
+
+**Concept:**
+Instead of expensive Rydberg states requiring two lasers, use **microwave transitions between ground-state hyperfine levels** in alkali atoms. For Rb-87, the ground state splits into F=1 and F=2 levels separated by 6.834682610904 GHz. While this is far from 7 MHz CW, we can detect low-frequency RF (like 7 MHz amateur radio signals) by mixing them with a local oscillator to create difference frequencies that modulate the atomic absorption, or by detecting the AC Stark shift and light shift effects on the optical transition.
+
+#### Detailed Parts List
+
+| Item | Part Number/Description | Supplier | Approx. Cost |
+|------|------------------------|----------|--------------|
+| **Rb-87 Vapor Cell** | GC19075-RB87 (75mm, enriched) | Thorlabs | $2,000 |
+| **780 nm ECDL Laser** | DL100 or TA100 (used) | eBay/Toptica | $3,000-5,000 |
+| **Photodiode** | DET36A/M (Si, 350-1100nm) | Thorlabs | $495 |
+| **Cell Heater** | GCH25-75 (25-75mm adjustable) | Thorlabs | $1,020 |
+| **Temperature Controller** | TC300 (0.001°C stability) | Thorlabs | $1,495 |
+| **Optical Isolator** | IO-3D-780-VLP (prevents feedback) | Thorlabs | $850 |
+| **Beam Splitter** | BS013 (50:50, 700-1100nm) | Thorlabs | $120 |
+| **Mirrors (2×)** | BB1-E02 (1" broadband) | Thorlabs | $70 each |
+| **Lens (collimating)** | AC254-030-B (f=30mm) | Thorlabs | $55 |
+| **Lens (focusing)** | AC254-050-B (f=50mm) | Thorlabs | $55 |
+| **Post holders/mounts** | Various (buy used lot) | eBay/Thorlabs | $300-500 |
+| **Oscilloscope** | TDS2024B (200 MHz, 4-ch) or similar | eBay (used) | $400-800 |
+| **Lock-in Amplifier** | SR830 (used) or DIY Arduino | eBay/DIY | $1,500 / $50 |
+| **Function Generator** | 33220A or similar (20 MHz) | eBay (used) | $300-600 |
+| **HF Radio Receiver** | RTL-SDR + upconverter OR old ham radio | Amazon/eBay | $50-200 |
+| **7 MHz Antenna** | 40m dipole or loop (DIY wire) | DIY | $20 |
+| **Breadboard/Table** | 12"×18" aluminum breadboard | Thorlabs/eBay | $150-300 |
+
+**Total: $8,000-$12,000** (can reduce to ~$6k with DIY heater, used optics, skip lock-in initially)
+
+#### Step-by-Step Build Instructions
+
+**Phase 1: Optical Setup (Week 1-2)**
+
+1. **Mount vapor cell in heater**
+   - Install Rb cell into GCH25-75 heater assembly
+   - Connect TC300 temperature controller
+   - Set temperature to 55°C (provides ~10¹⁰ atoms/cm³ density)
+   - Wait 30-60 minutes for thermal equilibrium
+   - Monitor temperature stability: should hold ±0.01°C
+
+2. **Laser alignment (coarse)**
+   - Mount ECDL on breadboard with ~12" clearance to cell
+   - Set laser current to mid-range (typically 60-80 mA for DL100)
+   - Set temperature controller to manufacturer spec (usually 20-25°C)
+   - Verify output power: should see 10-50 mW (measure with power meter or photodiode)
+   - Collimate beam: adjust output collimation lens for minimal divergence at 1-2 meters
+
+3. **Build optical path**
+   ```
+   LASER → ISOLATOR → BEAM SPLITTER → CELL → LENS → PHOTODIODE
+                            ↓
+                      SATURATION SPECTROSCOPY REFERENCE
+   ```
+   - Install optical isolator immediately after laser (critical: prevents feedback)
+   - Use 50:50 beam splitter to send ~50% through cell, 50% to reference
+   - Focus beam through cell with f=30mm lens (~1-2mm beam diameter)
+   - Collimate after cell and focus onto photodiode with f=50mm lens
+   - Keep beam height consistent (typically 2-4" above table)
+
+4. **Tune laser to Rb D2 line (780.24 nm)**
+   - Connect photodiode output to oscilloscope (DC coupling, 1 MΩ)
+   - Slowly scan laser wavelength by adjusting piezo voltage (0-100V ramp, ~1 Hz)
+   - Look for **absorption dips** on oscilloscope (transmission decreases)
+   - You should see multiple dips corresponding to different Rb transitions:
+     - F=2→F'=1,2,3 and F=1→F'=1,2 (5 transitions total, some overlap)
+   - Identify the F=2→F'=3 transition (rightmost dip, strongest)
+   - Fine-tune grating angle if needed (rotation changes wavelength coarsely)
+
+**Phase 2: Saturated Absorption Spectroscopy Lock (Week 2-3)**
+
+5. **Build reference beam path**
+   - Split beam before cell: send weak probe beam through cell, retro-reflect strong "pump" beam
+   - Pump beam (split from other BS output): expand to ~5mm, send backwards through cell
+   - Probe and pump overlap in cell, creating saturated absorption signals
+   - Detect probe beam on second photodiode after cell
+
+6. **Observe saturated absorption peaks**
+   - Scan laser frequency (piezo ramp)
+   - Oscilloscope shows inverted peaks (Doppler-free resonances) on top of absorption dips
+   - Crossover resonances appear between main transitions
+   - Lock to F=2→F'=3 resonance (no crossover, clean signal)
+
+7. **Implement frequency lock**
+   - Use lock-in amplifier or DIY PID circuit
+   - Modulate laser frequency at ~10-100 kHz (small sine wave on piezo)
+   - Demodulate photodiode signal → error signal
+   - Feed error signal back to piezo (slow) and laser current (fast)
+   - Verify lock: laser stays on resonance for hours without drift
+
+**Phase 3: RF Field Detection Setup (Week 3-4)**
+
+8. **Build RF field applicator for 7 MHz CW detection**
+
+   **Option A: Parallel Plate Electrodes (for strong E-field coupling)**
+   ```
+   Copper plates (10 cm × 10 cm) positioned 5 cm apart, straddling vapor cell
+
+   7 MHz CW source → 50Ω coax → Plates
+
+   E-field between plates = V/d = (Amplitude in Volts) / 0.05 m
+   ```
+   - Cut two copper/aluminum plates (PCB stock works)
+   - Mount on insulating supports (acrylic, PTFE) at 5 cm spacing
+   - Position vapor cell at center between plates
+   - Connect 7 MHz signal source to plates via BNC cable
+   - Use RF amplifier if needed (10-100W for strong field)
+
+   **Option B: Loop Antenna (for B-field coupling → AC Stark shift)**
+   ```
+   40-meter band loop: circumference = λ/4 ≈ 10 meters (for resonance)
+   Or small pickup loop: 10-20 turns, 20 cm diameter near cell
+   ```
+   - Wind 10-20 turns of magnet wire (22-26 AWG) in 20 cm coil
+   - Place coil around vapor cell (axis along beam direction or perpendicular)
+   - Connect to 7 MHz source via 50Ω coax
+   - Tune for resonance with variable capacitor if using resonant loop
+
+   **Option C: Direct Antenna Pickup (passive detection of ambient 7 MHz signals)**
+   - String 40m dipole antenna outdoors: 2×10m wires, fed at center
+   - Connect to capacitive plates near vapor cell
+   - Amplify if needed with wideband RF preamp (e.g., Minicircuits ZX60-33LN-S+)
+
+9. **7 MHz Signal Source Setup**
+   - **Option 1 (Active test):** Function generator set to 7.000 MHz, 1-10 Vpp into plates
+   - **Option 2 (Passive detection):** Tune HF receiver/RTL-SDR to 40m amateur band (7.000-7.300 MHz)
+   - Listen for CW signals: Morse code transmissions sound like beeps
+   - Use antenna to couple 7 MHz energy near vapor cell
+
+10. **Detection Method: Amplitude Modulation of Optical Absorption**
+    - The 7 MHz RF field won't directly drive hyperfine transitions (need 6.8 GHz for that)
+    - Instead, detect via **AC Stark shift** of optical transition:
+      - RF E-field oscillates electron wavefunction
+      - This shifts energy levels slightly (quadratic in E-field)
+      - Optical absorption at 780 nm changes at 7 MHz rate
+
+    - **Measurement approach:**
+      - Lock laser to Rb transition
+      - Monitor photodiode signal on oscilloscope (AC coupling, 10 MHz bandwidth)
+      - Apply 7 MHz CW to plates
+      - Observe 7 MHz modulation on photodiode signal (amplitude modulation)
+      - Use lock-in amplifier referenced to 7 MHz for better sensitivity
+
+**Phase 4: Calibration and Testing (Week 4)**
+
+11. **Calibrate E-field strength**
+    - Known E-field between plates: E = V/d
+    - Example: 10 Vpp into 5 cm gap → E = 10V / 0.05m = 200 V/m = 2 V/cm (peak)
+    - Measure photodiode signal change: ΔI (in µA or mV)
+    - Sensitivity: (ΔI/I) / E_field = responsivity in (%/V/cm)
+
+12. **Test with real 7 MHz CW signals**
+    - Connect 40m dipole antenna to parallel plates
+    - Tune HF receiver to 7 MHz amateur band
+    - Wait for CW transmission (Morse code beeps)
+    - Observe corresponding pulses on oscilloscope synchronized with audio
+    - Typical amateur signal: 100W transmitter, 50 km away → ~1-10 mV/cm at receiving antenna
+    - Should see clear modulation on photodiode during CW transmissions
+
+13. **Optimize sensitivity**
+    - Increase laser power (more photons → better SNR)
+    - Improve temperature stability (reduces drift)
+    - Shield from ambient RF (Faraday cage around cell, filtered power)
+    - Use balanced detection (two photodiodes, differential amplifier) to reject common-mode noise
+    - Add lock-in amplifier tuned to 7 MHz (extracts signal from noise)
+
+#### Expected Results
+
+**Signal Characteristics:**
+- **Baseline (no RF):** Steady DC voltage on photodiode (~1-5 V depending on laser power)
+- **With 7 MHz CW (1 V/cm):**
+  - AC modulation at 7 MHz, amplitude ~1-10 mV (0.1-1% of DC)
+  - On oscilloscope: sine wave riding on DC level
+  - Morse code visible as on/off keying of 7 MHz carrier
+
+**Sensitivity Estimate:**
+- Optical power: 10 mW through cell
+- Shot noise limit: √(2eP/hν) ≈ 10 pA/√Hz for 10 mW
+- AC Stark shift coefficient for Rb: ~10 kHz/(V/cm)² at 7 MHz
+- With 1 Hz bandwidth (lock-in): detectable E-field ~1-10 mV/cm
+
+**Troubleshooting:**
+- **No absorption signal:** Laser wavelength wrong (check 780 nm), cell too cold, misalignment
+- **Absorption too strong (saturated):** Laser power too high (add ND filter) or cell too hot
+- **Can't lock laser:** Modulation depth wrong, feedback polarity inverted, too much noise
+- **No 7 MHz signal:** RF amplifier needed, poor antenna coupling, faraday cage blocking signal
+- **Noise/drift:** Improve shielding, stabilize temperature, check ground loops
+
+#### Advanced: Heterodyne Detection for HF Band
+
+To directly measure 7 MHz (instead of relying on AC Stark shift), mix with local oscillator:
+
+```
+7 MHz signal × 6.827 GHz LO = 6.827 GHz ± 7 MHz sidebands
+```
+
+The lower sideband (6.820 GHz) is close to Rb hyperfine splitting (6.835 GHz) - detectable with microwave horn antenna and mixer.
+
+**Cost:** +$2k for microwave synthesizer and mixer
+**Sensitivity:** Improved to ~100 µV/cm
+
+#### Performance Summary
+
+- **Sensitivity:** 1-10 mV/cm (direct AC Stark), 100 µV/cm (heterodyne)
+- **7 MHz CW detection:** Yes, via amplitude modulation of optical absorption
+- **Bandwidth:** DC - 10 MHz (limited by photodiode)
+- **Dynamic range:** 60 dB (with lock-in amplifier)
+- **Total Cost:** $7k-$10k
+
+### 2. Coherent Population Trapping (CPT) - Very Low Cost
+
+**Concept:**
+Use a **single laser modulated at 6.8 GHz** (Rb hyperfine splitting) to create two sidebands that simultaneously drive F=1→F' and F=2→F' transitions. When both sidebands are resonant, atoms trap in a dark state (coherent superposition of F=1 and F=2). This creates a narrow transparency window. The 7 MHz CW signal modulates the CPT resonance via light shifts, causing intensity changes detectable on a photodiode.
+
+#### Detailed Parts List
+
+| Item | Part Number/Description | Supplier | Approx. Cost |
+|------|------------------------|----------|--------------|
+| **Rb-87 Vapor Cell (small)** | 25mm diameter, natural abundance OK | eBay/Surplus | $200-500 |
+| **795 nm Laser Diode** | HL7851G or similar (50-100 mW) | Thorlabs/eBay | $150-300 |
+| **Laser Mount/Driver** | LDM21 mount + LDC205C driver | Thorlabs | $500 total |
+| **Electro-Optic Modulator** | EO-PM-NR-C1 (resonant, 6.8 GHz) | Thorlabs | $1,800 |
+| **OR: Direct Current Modulation** | HMC566 6.8 GHz VCO chip + bias tee | Mini-Circuits | $50 (DIY) |
+| **Photodiode** | FDS100 (fast Si detector) | Thorlabs | $145 |
+| **Lens** | F220SMA-780 (collimating) | Thorlabs | $25 |
+| **RF Amplifier** | ZHL-3A (0.4-3 GHz, 25 dBm) | Mini-Circuits | $75 (used) |
+| **7 MHz Generator** | Arduino DDS (AD9850 module) | Amazon | $10 |
+| **Oscilloscope** | 100 MHz, 2-channel (used) | eBay | $200-400 |
+| **Small heater (DIY)** | Kapton tape heater + thermocouple | Omega/eBay | $50 |
+| **Optics mount** | Basic cage system or DIY | Thorlabs/DIY | $100-200 |
+
+**Total Cost:** $2,000-$3,500 (EOM version) OR $600-$1,200 (current modulation version)
+
+#### Step-by-Step Build: Current Modulation Approach (Cheapest)
+
+**Week 1: Basic Optical Setup**
+
+1. **Assemble laser diode system**
+   - Mount HL7851G laser diode in LDM21 mount (or DIY copper block with thermoelectric cooler)
+   - Connect to LDC205C current/TEC driver
+   - Set current to ~80 mA, temperature to 25°C
+   - Output should be ~50 mW at 795 nm (Rb D1 line - easier to work with than D2)
+
+2. **Collimate laser beam**
+   - Install F220SMA-780 aspheric lens in SM1 tube mount
+   - Adjust distance to laser diode until beam is collimated (~1-2mm diameter)
+   - Check collimation: beam should not expand/contract over 1-2 meter distance
+
+3. **Add 6.8 GHz modulation to laser current**
+   - **DIY Circuit:**
+     ```
+     HMC566 VCO (6.8 GHz) → SMA bias tee → Laser current input
+                                ↑
+                         DC current (LDC205C)
+     ```
+   - Build on small PCB or breadboard
+   - VCO output: ~0 dBm (1 mW) is sufficient
+   - Bias tee separates DC (laser current) from AC (6.8 GHz modulation)
+   - Tune VCO frequency precisely to 6.834682 GHz (use frequency counter or spectrum analyzer)
+
+   **Expected result:** Laser output has three frequency components:
+   - Carrier at ν₀ (center frequency)
+   - Upper sideband at ν₀ + 6.8 GHz
+   - Lower sideband at ν₀ - 6.8 GHz
+
+**Week 2: Vapor Cell and CPT Observation**
+
+4. **Prepare Rb vapor cell**
+   - If using bare cell: wrap with Kapton tape heater (25W, small strips)
+   - Add thermocouple to monitor temperature
+   - Heat to 40-50°C (adjust for optimal signal)
+   - Shield from stray magnetic fields (mu-metal sheet or three orthogonal Helmholtz coils)
+
+5. **Align beam through cell**
+   - Position cell in beam path (use simple mounts or clay)
+   - Focus beam to ~1-2 mm diameter through cell center
+   - Collect transmitted light on FDS100 photodiode
+
+6. **Observe CPT resonance**
+   - Connect photodiode to oscilloscope (DC coupling)
+   - Slowly scan laser frequency (adjust current or temperature)
+   - Look for **narrow transmission peak** (CPT resonance) within broader absorption dip
+   - Width: ~1-10 kHz (much narrower than Doppler width ~500 MHz)
+
+   **What you'll see:**
+   - Broad absorption dip (~500 MHz wide) from Doppler broadening
+   - Sharp transmission spike at center (CPT dark state)
+   - Peak occurs when laser frequency is centered such that both sidebands are resonant
+
+**Week 3: 7 MHz CW Detection Setup**
+
+7. **Build RF field applicator**
+   - Use **Option A from Method 1** (parallel copper plates, 5 cm spacing)
+   - Or wrap coil around vapor cell (10 turns, 10 cm diameter)
+
+8. **Generate 7 MHz CW signal**
+   - Arduino + AD9850 DDS module programmed for 7.000 MHz output
+   - Or use function generator set to 7 MHz, 1 Vpp
+   - Connect to RF amplifier (optional, for stronger signal)
+   - Feed into parallel plates or coil
+
+9. **Detect 7 MHz modulation of CPT signal**
+   - Lock laser frequency to CPT resonance (manually or with slow feedback)
+   - Monitor photodiode on oscilloscope, AC coupling, 10 MHz bandwidth
+   - Apply 7 MHz CW signal to cell
+
+   **Detection mechanism:**
+   - 7 MHz E-field causes AC Stark shift of ground states F=1 and F=2
+   - This shifts CPT resonance frequency at 7 MHz rate
+   - Since laser is locked to CPT peak, transmission oscillates at 7 MHz
+   - Observe 7 MHz sine wave on oscilloscope
+
+10. **Optimize and calibrate**
+    - Increase 7 MHz amplitude: observe larger oscilloscope signal
+    - Plot photodiode AC amplitude vs. applied E-field (known from V/d)
+    - Typical sensitivity: 5-50 mV/cm with simple setup
+
+#### Testing with Amateur Radio 7 MHz CW
+
+11. **Connect outdoor antenna**
+    - String 40m dipole (2×10m wires, center-fed)
+    - Run coax to parallel plates near vapor cell
+    - Add RF preamplifier if signals are weak (e.g., ZX60-33LN-S+, $30)
+
+12. **Monitor amateur radio band**
+    - Use RTL-SDR tuned to 7.000-7.300 MHz
+    - Listen for CW (Morse code) transmissions - common in evening hours
+    - Typical signals: dit-dah-dit patterns (dots and dashes)
+
+13. **Observe CW on atomic sensor**
+    - When CW transmission occurs, oscilloscope shows 7 MHz burst
+    - Duration matches Morse code elements (50-200 ms dots/dashes)
+    - **Proof of detection:** Oscilloscope and audio from SDR are synchronized
+
+#### Expected Performance
+
+- **Sensitivity:** 5-50 mV/cm (worse than full EIT, but adequate)
+- **7 MHz detection:** Yes, clear on/off keying visible
+- **Advantages:** Ultra-compact, low power (~2W total), room temperature
+- **Build time:** 2-3 weeks for first-time builder
+
+#### Troubleshooting
+
+- **No CPT signal:** Check 6.8 GHz modulation (use spectrum analyzer), magnetic field shielding, laser frequency
+- **CPT too weak:** Increase modulation depth, optimize cell temperature, reduce beam diameter
+- **7 MHz signal buried in noise:** Add lock-in amplifier, improve RF shielding, increase antenna gain
+- **Drift:** Stabilize laser temperature (±0.01°C), shield from air currents
+
+#### Why This Works for 7 MHz
+
+The CPT dark state is extremely sensitive to perturbations. Even though 7 MHz is far from the GHz hyperfine splitting, the AC E-field modulates:
+1. **Differential light shift** between F=1 and F=2 states
+2. **Zeeman shifts** (if 7 MHz has magnetic component)
+3. **Laser intensity** via electroabsorption in vapor cell
+
+Combined, these give measurable 7 MHz modulation of transmitted intensity.
+
+### 3. Faraday Rotation Sensors ($5k-$15k)
+
+**Concept:**
+A linearly polarized laser beam passing through Rb vapor rotates its polarization angle when exposed to a magnetic field (Faraday effect). The 7 MHz CW signal's **magnetic component** (B-field from loop antenna or inductor) causes time-varying Faraday rotation at 7 MHz. This rotation is converted to intensity modulation using a polarizing beam splitter and balanced detector.
+
+#### Detailed Parts List
+
+| Item | Part Number/Description | Supplier | Approx. Cost |
+|------|------------------------|----------|--------------|
+| **Rb Vapor Cell** | 25-50mm, natural abundance | Thorlabs/eBay | $300-1,000 |
+| **780 nm Laser Diode** | L780P010 (10 mW DFB laser) | Thorlabs | $300 |
+| **Laser Controller** | ITC4001 (current + TEC) | Thorlabs | $1,200 |
+| **Linear Polarizer (input)** | LPVIS050 (high extinction) | Thorlabs | $85 |
+| **Polarizing Beam Splitter** | PBS252 (cube, 620-1000nm) | Thorlabs | $165 |
+| **Balanced Photodetector** | PDB450A (DC-150 MHz) | Thorlabs | $695 |
+| **Quarter-wave plate** | WPQ10M-780 (for circular pol, optional) | Thorlabs | $140 |
+| **Lenses (2×)** | AC254-045-B (f=45mm) | Thorlabs | $55 each |
+| **Helmholtz Coils** | DIY: 200 turns, 20 cm diameter, pair | DIY wire | $40 |
+| **Mu-Metal Shield** | Cylinder, 10 cm dia × 15 cm long | Magnetic Shield Corp | $200-500 |
+| **Lock-in Amplifier** | SR830 (used) or HF2LI | eBay/Zurich | $1,500 / $15k |
+| **7 MHz Loop Antenna** | 10-turn coil, 30 cm dia, tuned | DIY | $30 |
+| **Cell Heater** | Kapton tape + PID controller | Omega | $100 |
+| **Oscilloscope** | 100 MHz, 2-ch | eBay | $300 |
+
+**Total: $5,000-$15,000** (depending on lock-in choice)
+
+#### Step-by-Step Build
+
+**Week 1: Optical Path and Polarization Setup**
+
+1. **Assemble laser system**
+   - Mount L780P010 DFB laser in SM1-threaded mount
+   - Connect to ITC4001 controller (current + TEC)
+   - Set current to 20 mA, temperature to 25°C
+   - Output: ~10 mW, very stable frequency (DFB laser has narrow linewidth)
+
+2. **Create polarized beam**
+   - Place LPVIS050 linear polarizer after laser
+   - Adjust polarizer angle to maximize transmission (find extinction axis)
+   - Verify polarization: rotate second polarizer 90° should block all light
+
+3. **Vapor cell preparation**
+   - Wrap cell with Kapton heater, set to 45-55°C
+   - Place inside mu-metal cylinder (shields from Earth's B-field ~50 µT)
+   - Leave small holes for laser beam entrance/exit
+   - Install Helmholtz coils around shield (for zeroing residual fields)
+
+**Week 2: Faraday Rotation Detection**
+
+4. **Build balanced detection path**
+   ```
+   LASER → LINEAR POLARIZER → VAPOR CELL → PBS CUBE → Balanced Detector
+                                                    ↓
+                                              (S and P polarizations separated)
+   ```
+   - PBS cube splits beam into S-pol (reflected) and P-pol (transmitted)
+   - Each output goes to one channel of PDB450A balanced detector
+   - Balanced output = (I_S - I_P) / (I_S + I_P) ∝ rotation angle
+
+5. **Null the detector**
+   - With no B-field, rotate PBS cube angle to balance S and P signals
+   - Balanced output should be near zero (µV level)
+   - Small residual signal OK - this is the null point
+
+6. **Test with DC magnetic field**
+   - Apply small DC current to Helmholtz coils (start with 10 mA)
+   - Observe balanced detector output change (should see mV-level shift)
+   - Reverse current → signal reverses (confirms Faraday rotation)
+   - Typical sensitivity: ~1 mV output per nT B-field
+
+**Week 3: 7 MHz CW Detection Setup**
+
+7. **Build 7 MHz magnetic field applicator**
+   - Wind 10 turns of 18 AWG wire in 30 cm diameter coil
+   - Position coil with axis aligned to laser beam (parallel to vapor cell)
+   - Add tuning capacitor for resonance:
+     ```
+     L ≈ 10 µH (10 turns, 30 cm)
+     Resonance at 7 MHz: C = 1/(4π²f²L) ≈ 50 pF
+     ```
+   - Connect 7 MHz signal generator via 50Ω coax
+   - At resonance, Q ~100 → 100× voltage gain
+
+8. **Generate 7 MHz magnetic field**
+   - Function generator: 7.000 MHz, 1 Vpp into resonant coil
+   - Current in coil: I = V×Q/ωL ≈ 10-100 mA (depending on Q)
+   - B-field at cell center: B ≈ μ₀NI/d = (4π×10⁻⁷)(10)(0.1A)/0.3m ≈ 4 µT peak
+
+9. **Detect 7 MHz Faraday rotation**
+   - Connect balanced detector output to oscilloscope (AC coupling, 10 MHz BW)
+   - Apply 7 MHz to coil
+   - Observe 7 MHz sine wave on oscilloscope
+   - Amplitude proportional to B-field strength
+
+   **Physics:**
+   - Faraday rotation angle: θ = V × B × L
+     - V = Verdet constant (~10⁶ rad/T/m for Rb vapor at 780 nm)
+     - B = 4 µT
+     - L = 0.05 m (cell length)
+   - θ ≈ (10⁶)(4×10⁻⁶)(0.05) = 0.2 radians = 11°
+   - Intensity modulation: ΔI/I ≈ sin(2θ) ≈ 35% (easily detectable!)
+
+**Week 4: Testing with Amateur Radio 7 MHz**
+
+10. **Build receive loop antenna**
+    - Large loop: 2-3 meter diameter, 1-2 turns
+    - Or ferrite rod antenna: 100 turns on 30 cm ferrite rod
+    - Tune with variable capacitor to 7 MHz
+    - Connect to magnetic field coil via matching network
+
+11. **Passive detection of 7 MHz CW**
+    - Place receive loop outdoors, oriented for best signal
+    - Use RTL-SDR to monitor 40m band audio
+    - When CW transmission occurs:
+      - Audio from SDR: beep-beep-beep (Morse code)
+      - Oscilloscope from balanced detector: 7 MHz bursts synchronized with audio
+    - Typical signal: 100W at 50 km → ~10 nT at receive antenna
+      - This produces ~1 mV signal on balanced detector
+
+12. **Convert to E-field detection**
+    - Since E-field and B-field are related in EM wave: E = c×B
+    - B = 10 nT → E = (3×10⁸ m/s)(10×10⁻⁹ T) = 3 V/m = 30 mV/cm
+    - So 1 mV detector signal corresponds to 30 mV/cm E-field
+    - **Sensitivity: ~30 mV/cm** (comparable to other methods)
+
+#### Expected Performance
+
+- **B-field sensitivity:** 100 pT - 1 nT (with lock-in)
+- **E-field sensitivity (converted):** 3-30 mV/cm
+- **7 MHz detection:** Excellent - Faraday rotation responds to AC fields
+- **Bandwidth:** DC - 100 MHz (limited by balanced detector)
+- **Advantages:** Very linear, wide dynamic range, works off-resonance
+
+#### Troubleshooting
+
+- **No Faraday signal:** Check mu-metal shielding (residual DC field saturates signal), verify laser wavelength
+- **Signal too small:** Increase cell temperature (more atoms), use longer cell, increase B-field
+- **Noise:** Improve balance (adjust PBS angle finely), add lock-in amplifier, shield from vibration
+- **Drift:** Stabilize laser wavelength, temperature, magnetic shield position
+
+#### Why Faraday Rotation Excels at 7 MHz
+
+Unlike hyperfine transitions (GHz), Faraday rotation works at **any frequency** from DC to GHz:
+- The AC magnetic field directly rotates polarization (no need to match atomic transition)
+- Response is nearly instantaneous (limited only by atomic collision time ~ns)
+- Linear in B-field (no saturation effects at modest power)
+
+This makes it ideal for HF/VHF detection (1-100 MHz range).
+
+### 4. Thermal Beam / Effusive Cell Methods (Educational: $500-$2k)
+
+**Concept:**
+Heat sodium metal in a glass tube to create vapor (~200-300°C). A 589 nm laser excites sodium atoms to the first excited state (D-line). The 7 MHz RF field modulates fluorescence intensity via Autler-Townes splitting or AC Stark shifts. Detect modulation with photodiode. This is the **simplest and cheapest** atomic sensor, ideal for education.
+
+#### Detailed Parts List
+
+| Item | Description | Supplier | Cost |
+|------|-------------|----------|------|
+| **Sodium metal** | 5-10 grams, 99.9%, in mineral oil | Sigma-Aldrich/eBay | $50-100 |
+| **Glass tube** | Pyrex, 15mm OD, 30 cm length, sealed one end | Scientific glass supplier | $30 |
+| **Vacuum pump** | Roughing pump (10⁻³ Torr) | Harbor Freight / eBay | $100-200 |
+| **Argon gas** | Small cylinder (buffer gas, ~10 Torr) | Welding supply | $50 |
+| **589 nm laser** | Yellow laser pointer (5-50 mW) stabilized | LaserGlow / Z-Bolt | $200-500 |
+| **OR: 589 nm LED** | High-power yellow LED + narrow filter | Lumileds / Edmund Optics | $100 |
+| **Photodiode** | BPW34 (Si, cheap, sensitive) | Digikey | $2 |
+| **Heater** | Nichrome wire (24 AWG, 5 ft) + fiberglass tape | eBay | $15 |
+| **Variac** | 0-140V variable transformer | Amazon | $50 |
+| **Thermocouple** | K-type, 0-400°C | Omega/Amazon | $10 |
+| **7 MHz source** | Function generator or Arduino DDS | eBay / DIY | $50-300 |
+| **RF coil** | 20 turns, 10 cm diameter, around cell | DIY wire | $5 |
+| **Oscilloscope** | 20 MHz+, 1-2 channel | eBay (old Tek) | $100-300 |
+| **Optics** | Lens (f=50mm), mounts, posts | Surplus Shed / eBay | $50 |
+
+**Total: $500-$1,500** (depends on new vs. surplus parts)
+
+#### Step-by-Step Build
+
+**SAFETY WARNING:**
+- Sodium reacts violently with water/moisture → fire/explosion risk
+- Work in dry environment, have Class D fire extinguisher (dry sand backup)
+- Wear safety glasses, gloves, lab coat
+- Cut sodium under mineral oil, transfer quickly to dry tube
+- Seal tube under vacuum or inert gas
+
+**Week 1: Cell Construction (Most Critical Step)**
+
+1. **Prepare glass tube**
+   - Use Pyrex tube 15mm OD × 30 cm long, sealed at one end
+   - Clean thoroughly: acetone, methanol, distilled water, bake at 150°C for 1 hour
+   - Dry completely (overnight in oven at 100°C)
+
+2. **Add sodium metal (work under argon or in glovebox)**
+   - Remove ~1 gram sodium from mineral oil
+   - Quickly cut into small chunks (~5mm cubes) under oil
+   - Blot dry with paper towel (wear gloves!)
+   - Drop sodium into dry tube immediately
+   - Sodium should be shiny silver (tarnish = oxidized = bad)
+
+3. **Evacuate and seal**
+   - Connect tube to vacuum pump via flexible hose + valve
+   - Pump down to 10⁻³ Torr (use roughing pump, 15-30 min)
+   - Backfill with argon to 10 Torr (buffer gas prevents radiation trapping)
+   - Seal tube with torch (propane or glass-working torch)
+     - Heat neck region to ~1000°C, pull to close
+     - Allow sodium to remain cold (ice bath on bottom of tube during sealing)
+
+   **Alternative (simpler but less optimal):**
+   - Skip vacuum, just flush with argon, seal quickly
+   - Some air contamination OK for educational purposes (reduces lifetime to weeks vs. years)
+
+**Week 2: Optical and Heating Setup**
+
+4. **Build heater assembly**
+   - Wrap nichrome wire around tube (20-30 turns, spaced evenly over 10 cm section)
+   - Cover with fiberglass tape for insulation and electrical safety
+   - Attach thermocouple to tube wall with Kapton tape
+   - Connect nichrome to variac (start at 0V!)
+
+5. **Heat cell gradually**
+   - Increase variac slowly over 30 minutes to avoid thermal shock
+   - Target temperature: 250-300°C (sodium vapor pressure ~0.1-1 Torr)
+   - Monitor thermocouple: Pyrex melts at 820°C, safe up to 500°C
+   - Observe: sodium melts at 98°C (silvery liquid), vaporizes above 200°C (faint yellow glow)
+
+6. **Optical setup**
+   - Point 589 nm laser through cell (along tube axis)
+   - Use lens to focus beam to 2-3 mm diameter in cell center
+   - Place photodiode 10-20 cm after cell to collect fluorescence (orthogonal to beam for best signal)
+   - Shield photodiode from direct laser light (black tube/baffles)
+
+**Week 3: 7 MHz CW Detection**
+
+7. **Observe sodium D-line absorption**
+   - With laser on and cell hot, photodiode should show reduced signal when laser passes through vapor (absorption)
+   - Tune laser wavelength (if tunable) to maximize absorption (589.0 nm or 589.6 nm, D2 or D1 lines)
+   - If using fixed laser pointer: adjust cell temperature to shift Doppler profile into resonance
+
+8. **Build RF coil for 7 MHz**
+   - Wind 20 turns of magnet wire in 10 cm diameter coil
+   - Slide cell through coil center (coil axis = tube axis)
+   - Connect to 7 MHz function generator (1-10 Vpp)
+
+9. **Detect 7 MHz modulation**
+   - Connect photodiode to oscilloscope (AC coupling, 10 MHz BW)
+   - Apply 7 MHz signal to coil
+   - Look for 7 MHz modulation on photodiode signal
+
+   **Expected mechanism:**
+   - AC Stark shift: 7 MHz E-field/B-field shifts atomic levels at 7 MHz rate
+   - This modulates absorption → fluorescence changes at 7 MHz
+   - Signal amplitude: ~0.1-1% of DC fluorescence (weak but detectable)
+
+10. **Optimize sensitivity**
+    - Increase 7 MHz amplitude (use RF power amplifier if available, e.g., 10-50W)
+    - Adjust cell temperature for maximum absorption (more atoms = stronger signal)
+    - Use lock-in amplifier referenced to 7 MHz (dramatically improves SNR)
+
+**Week 4: Testing with Real 7 MHz CW**
+
+11. **Connect outdoor antenna**
+    - 40m dipole (2×10m wires) connected to RF coil via 50Ω coax
+    - Add RF preamp if needed (e.g., 20 dB gain at 7 MHz)
+
+12. **Monitor amateur radio**
+    - Use RTL-SDR or communications receiver tuned to 7.000-7.200 MHz
+    - Listen for CW transmissions (common in evenings, especially 7.025-7.040 MHz)
+
+13. **Observe on sodium sensor**
+    - When CW transmission occurs, oscilloscope shows 7 MHz burst
+    - On/off pattern matches Morse code elements
+    - Typical signal strength: 100W transmitter at 50 km → 0.1-1 V/cm at antenna
+    - Sodium sensor detects this as ~0.1-1 mV modulation on photodiode
+
+#### Expected Performance
+
+- **Sensitivity:** 0.1-1 V/cm (1000× worse than Rydberg, but works!)
+- **7 MHz detection:** Yes, visible on oscilloscope during strong CW transmissions
+- **Advantages:** Ultra-cheap, educational, no expensive lasers, demonstrates atomic sensing
+- **Limitations:** Poor sensitivity, short cell lifetime if air-contaminated, safety concerns
+
+#### Troubleshooting
+
+- **No fluorescence:** Cell too cold (increase temp), laser off-resonance, photodiode not aligned
+- **Weak absorption:** Sodium oxidized (cell has leak), temperature wrong
+- **No 7 MHz signal:** RF power too low (need 10W+), coil not coupled to cell, photodiode saturated
+- **Cell degraded:** Sodium turned black (oxide) - cell is dead, build new one
+
+#### Educational Value
+
+This setup is perfect for undergraduate physics labs:
+- Demonstrates atomic spectroscopy (D-line absorption/fluorescence)
+- Shows quantum sensing principles at low cost
+- Introduces vacuum techniques, glass-working (optional), RF electronics
+- Can detect real-world RF signals (ham radio CW)
+- Total cost ~$500 with careful scrounging
+
+#### Advanced Variation: Sodium Lamp Excitation
+
+Instead of laser, use sodium street lamp (low-pressure Na discharge):
+- **Cost:** $20-50 (eBay, old street lamp)
+- **Wavelength:** Perfect match to D-line (589 nm, both lines present)
+- **Detect:** Increased fluorescence when RF is applied (opposite of absorption measurement)
+- **Advantage:** No laser stabilization needed
+- **Disadvantage:** Broad, incoherent source (lower signal)
+
+### 5. Repurposed Atomic Clock Modules ($1k-$3k)
+
+**Concept:**
+Commercial rubidium atomic frequency standards (used in telecom, GPS, military) contain a complete atomic physics package: Rb-87 cell, RF synthesizer at 6.8 GHz, lamp, photodetector, and servo electronics. These devices lock their output frequency to the Rb hyperfine transition. By tapping the **error signal** (which monitors deviation from atomic resonance), we can detect external RF fields that shift the atomic transition. For 7 MHz detection, we apply the HF signal to shift the resonance and observe the error signal modulation.
+
+#### Recommended Surplus Units
+
+| Model | Manufacturer | Typical Price | Notes |
+|-------|--------------|---------------|-------|
+| **LPRO-101** | Symmetricom (Microsemi) | $500-$1,000 | Most common, good docs available |
+| **FE-5680A** | Frequency Electronics | $300-$800 | Compact, lower power |
+| **PRS10** | Stanford Research Systems | $1,500-$2,500 | Best performance, lab-grade |
+| **CSAC** | Symmetricom (chip-scale) | $1,000-$1,500 | Ultra-compact, lower performance |
+
+**Best choice for hacking: LPRO-101** (abundant on eBay, active enthusiast community on Time-Nuts mailing list)
+
+#### Detailed Parts List
+
+| Item | Description | Supplier | Cost |
+|------|-------------|----------|------|
+| **Rb Frequency Standard** | Symmetricom LPRO-101 (used, working) | eBay | $500-1,000 |
+| **Power Supply** | +5V, 1.5A regulated | Amazon/bench supply | $20-50 |
+| **Oscilloscope** | 100 MHz, 2-channel | eBay | $200-400 |
+| **Multimeter** | Basic DMM for DC voltages | Amazon | $20 |
+| **7 MHz Source** | Function generator or SDR transmit | eBay | $50-300 |
+| **Copper plates** | For E-field application near Rb cell | Hardware store | $10 |
+| **Coax/connectors** | SMA, BNC cables | Amazon | $20 |
+| **Lock-in Amplifier** | SR830 (optional, for low-level signals) | eBay | $1,500 (used) |
+
+**Total: $800-$2,500** (depends on luck finding cheap LPRO)
+
+#### Step-by-Step Modification
+
+**Week 1: Understanding the Unit**
+
+1. **Acquire LPRO-101 and documentation**
+   - Buy from eBay (search "rubidium frequency standard LPRO")
+   - Download service manual: available on Time-Nuts archives or K6JCA website
+   - Key specs: Output 10 MHz sine wave, locks to Rb 6.834682610904 GHz
+
+2. **Power up and verify operation**
+   - Connect +5V power (pin 1 = +5V, pin 7 = GND, DB-9 or DB-15 connector)
+   - Current draw: ~1.2A initially (heater), settles to 0.8A after warm-up (~5 min)
+   - Monitor 10 MHz output on oscilloscope (should be clean sine wave, ~1 Vpp)
+   - Wait ~10 minutes for frequency lock (LED indicator or check control voltage)
+
+3. **Locate test points**
+   - **TP1: Error signal / C-field DAC** (monitors deviation from lock point)
+   - **TP2: Lamp photodiode output** (RF absorption signal)
+   - **TP3: 6.8 GHz synthesizer monitor** (low-level 6.8 GHz output)
+   - Refer to service manual for exact locations (usually small vias or resistor pads)
+
+**Week 2: Tapping the Error Signal**
+
+4. **Access internal circuitry (WARNING: Voids warranty, risk of damage)**
+   - Remove top cover (usually 4-6 screws)
+   - ESD precautions: ground wrist strap, work on anti-static mat
+   - Identify physics package (metal cylinder, ~3 cm diameter) and control PCB
+
+5. **Connect oscilloscope to error signal (TP1)**
+   - Use high-impedance probe (10 MΩ, 10× attenuation)
+   - Should see ~0-5V DC when locked (varies by unit)
+   - This voltage adjusts C-field (magnetic field) to keep atoms on resonance
+   - Changes in this voltage indicate shift in atomic transition frequency
+
+**Week 3: 7 MHz Field Application**
+
+6. **Build E-field applicator**
+   - Cut two copper plates (5 cm × 5 cm)
+   - Position plates 3-5 cm apart, straddling the physics package inside LPRO
+   - Route wires carefully (don't short to PCB!)
+   - Connect to BNC feedthrough or bring wires out through ventilation holes
+
+7. **Apply 7 MHz signal**
+   - Function generator: 7.000 MHz, start with 1 Vpp
+   - Feed into copper plates
+   - **Detection mechanism:**
+     - 7 MHz E-field causes AC Stark shift of Rb hyperfine transition
+     - This shifts transition frequency by small amount (~kHz level)
+     - Servo loop tries to compensate → error signal (TP1) shows 7 MHz modulation
+
+8. **Observe 7 MHz on error signal**
+   - Oscilloscope connected to TP1, AC coupling, 10 MHz bandwidth
+   - Apply 7 MHz to plates
+   - Look for 7 MHz sine wave superimposed on DC error voltage
+   - Amplitude: ~1-10 mV for 1 V/cm E-field (depends on servo bandwidth)
+
+**Week 4: Calibration and Testing**
+
+9. **Calibrate sensitivity**
+   - Known E-field: E = V/d (voltage between plates / spacing)
+   - Example: 5 Vpp across 5 cm → E = 5V / 0.05m = 100 V/m = 1 V/cm
+   - Measure TP1 modulation amplitude
+   - Responsivity: (mV modulation at TP1) / (V/cm applied field)
+   - Typical: 10-100 µV per mV/cm → sensitivity ~10-100 mV/cm
+
+10. **Test with amateur radio 7 MHz CW**
+    - Connect 40m dipole to copper plates (via matching network if needed)
+    - Monitor 7 MHz band with RTL-SDR
+    - During CW transmission: TP1 shows bursts synchronized with Morse code
+    - Typical received signal (100W at 50 km): ~10-100 mV/cm
+    - Should produce ~1-10 mV modulation on TP1
+
+11. **Improve sensitivity with lock-in detection**
+    - Connect TP1 to lock-in amplifier input
+    - Reference: 7 MHz from function generator or recovered from antenna signal
+    - Lock-in extracts 7 MHz component from noise
+    - Can improve sensitivity by 10-100× (down to ~1-10 mV/cm)
+
+#### Expected Performance
+
+- **Sensitivity:** 10-100 mV/cm (direct), 1-10 mV/cm (with lock-in)
+- **7 MHz detection:** Yes, via error signal modulation
+- **Advantages:** Turnkey hardware, reliable, includes all RF/servo electronics
+- **Bandwidth:** ~1 kHz (limited by servo loop response time)
+- **Limitations:** Slow servo (can't track fast variations), bulky
+
+#### Troubleshooting
+
+- **Unit won't lock:** Check power voltage (must be 5.0V ±0.1V), warm-up time, aged Rb lamp (replace lamp if >10 years old)
+- **No error signal:** Wrong test point, unit not locked, probe loading circuit
+- **No 7 MHz response:** E-field too weak (increase amplitude), physics package shielded (better coupling needed)
+- **Drift:** Temperature changes (LPRO has oven, but still sensitive), aging (normal, ~1×10⁻¹¹/day)
+
+#### Advanced: Heterodyne Detection for Direct HF Measurement
+
+For true HF sensitivity, mix 7 MHz signal with internal 6.8 GHz synthesizer:
+
+1. Extract 6.8 GHz from TP3 (low-level signal, ~-20 dBm)
+2. Mix with 7 MHz using microwave mixer (e.g., Minicircuits ZX05-153MH-S+)
+3. Products: 6.800 GHz ± 7 MHz = 6.793 GHz and 6.807 GHz sidebands
+4. One sideband is closer to Rb transition → enhances response
+5. **Improved sensitivity:** ~100 µV/cm (10× better)
+
+#### Why This Works
+
+The Rb frequency standard is essentially a complete atomic sensor in a box. The servo electronics continuously monitor the atomic resonance and correct for drifts. By observing the error signal, we're directly measuring how much the applied 7 MHz field perturbs the atoms. This is analog to how seismometers work: the feedback signal tells you about external disturbances.
+
+#### Community Resources
+
+- **Time-Nuts mailing list** (groups.io/g/time-nuts): Active community of atomic clock enthusiasts
+- **LPRO mods and hacks:** many members have done similar experiments
+- **Schematics:** available for LPRO-101, PRS10, FE-5680A
+- **Rb lamp replacement:** ~$200 from vendors, extends life by 10+ years
+
+### 6. Nitrogen-Vacancy (NV) Diamond Sensors ($10k-$50k)
+
+**Concept:**
+Nitrogen-vacancy centers in diamond are atom-like defects with quantum spin states that can be optically initialized, manipulated, and read out. The NV center's ground state has a spin triplet (m_s = 0, ±1) split by 2.87 GHz. A 7 MHz RF field modulates the spin state populations via AC Stark shifts and spin mixing, changing the fluorescence intensity. NV sensors work at room temperature and offer nanoscale spatial resolution - ideal for near-field RF mapping.
+
+#### How NV Centers Detect 7 MHz
+
+Unlike alkali atoms (GHz hyperfine transitions), NV centers respond to 7 MHz via:
+1. **AC electric field coupling:** Shifts ground state levels via Stark effect (quadratic in E-field)
+2. **AC magnetic field coupling:** Zeeman effect modulates m_s = ±1 splitting (linear in B-field)
+3. **Strain modulation:** Piezoelectric effect in diamond converts E-field to strain, shifts NV levels
+
+The key advantage: **broadband response** from DC to GHz, making 7 MHz detection straightforward.
+
+#### Detailed Parts List
+
+| Item | Description | Supplier | Cost |
+|------|-------------|----------|------|
+| **NV Diamond Sample** | Type Ib, [NV⁻] ~1 ppm, polished, 3×3×0.5 mm | Element Six / Adamas Nano | $500-2,000 |
+| **532 nm Laser** | DPSS, 50-200 mW, single-mode | Thorlabs (DJ532-40) | $2,500 |
+| **Photodetector** | APD or PMT for fluorescence (650-800 nm) | Thorlabs (APD430A2) | $3,500 |
+| **Dichroic Mirror** | 532 nm reflect / 650+ nm transmit | Semrock (Di03-R532) | $350 |
+| **Long-pass Filter** | Block 532 nm, pass 650-800 nm | Semrock (BLP01-532R) | $300 |
+| **Objective Lens** | NA 0.7-0.9, infinity-corrected, 40-100× | Olympus / Nikon | $1,000-3,000 |
+| **Microwave Source** | 2.87 GHz synthesizer + amplifier | Mini-Circuits / HP | $1,000-3,000 |
+| **Microwave Antenna** | Copper wire loop or stripline on PCB | DIY | $10 |
+| **7 MHz Source** | Function generator | eBay | $100-500 |
+| **Lock-in Amplifier** | SR830 or equivalent | eBay | $1,500 (used) |
+| **Optical Table/Breadboard** | Vibration isolation | Thorlabs | $500-2,000 |
+| **Misc. optics** | Mirrors, lenses, mounts | Thorlabs | $1,000 |
+| **Magnet** | Permanent (10-100 Gauss, optional) | K&J Magnetics | $20 |
+
+**Total: $12,000-$20,000** (entry-level), up to $50k for complete microscope setup
+
+#### Step-by-Step Build
+
+**Week 1-2: Optical Setup (Confocal Fluorescence Microscope)**
+
+1. **Mount NV diamond sample**
+   - Attach diamond to glass slide with index-matching oil
+   - Position on XYZ translation stage (micrometer precision)
+   - Orient diamond with [100] or [111] face up (NV axis known)
+
+2. **Build optical excitation path**
+   ```
+   532 nm LASER → DICHROIC MIRROR → OBJECTIVE → DIAMOND
+                                          ↑
+                                    FLUORESCENCE (650-800 nm)
+                                          ↓
+                                   LONG-PASS FILTER → APD
+   ```
+   - Expand and collimate 532 nm beam to fill objective back aperture
+   - Dichroic reflects 532 nm down into objective, transmits red fluorescence up
+   - Objective focuses 532 nm to ~500 nm spot on diamond (~1 µm² area)
+   - Collect fluorescence through same objective (confocal geometry)
+   - Long-pass filter blocks scattered 532 nm laser light
+   - APD detects red fluorescence (zero-phonon line at 637 nm + phonon sideband to 800 nm)
+
+3. **Observe NV fluorescence**
+   - With 50 mW laser power, expect 10⁴-10⁶ counts/sec on APD (depends on NV density)
+   - Scan XYZ stage to find bright NV centers (use software like Python + DAQ)
+   - Individual NV centers appear as diffraction-limited spots (~500 nm FWHM)
+
+**Week 2-3: Microwave Setup and ODMR**
+
+4. **Build microwave delivery**
+   - **Option A (simple):** Copper wire loop (10 mm diameter) placed 1-2 mm above diamond
+   - **Option B (better):** PCB stripline (50 Ω impedance) with diamond on top
+   - Connect to 2.87 GHz synthesizer + amplifier (1-10W output)
+
+5. **Perform Optically Detected Magnetic Resonance (ODMR)**
+   - Apply continuous 532 nm laser + constant microwave power (~10 dBm at antenna)
+   - Sweep microwave frequency from 2.80 to 2.95 GHz (slow scan, ~10 sec)
+   - Monitor APD count rate vs. frequency
+   - **Expected result:** Fluorescence **dip** at 2.87 GHz (m_s = 0 → m_s = ±1 transition)
+   - Dip depth: 10-30% of baseline fluorescence
+   - Linewidth: 1-10 MHz (depends on NV quality, power broadening)
+
+6. **Apply static magnetic field (optional)**
+   - Place small permanent magnet near diamond (~10-100 Gauss field)
+   - ODMR now shows **two dips** (Zeeman splitting of m_s = -1 and +1)
+   - Separation: ~2.8 MHz per Gauss (gyromagnetic ratio of NV electron spin)
+   - This improves sensitivity for B-field detection
+
+**Week 3-4: 7 MHz RF Field Detection**
+
+7. **Build 7 MHz E-field or B-field applicator**
+
+   **For E-field:**
+   - Place two small electrodes (copper tape, 1 mm wide) on diamond surface, 100 µm apart
+   - Connect to 7 MHz function generator (1-10 Vpp)
+   - E-field between electrodes: E = V / 100 µm = 10⁵ V/m = 1000 V/cm (strong!)
+
+   **For B-field:**
+   - Wind small coil (5-10 turns, 5 mm diameter) around diamond
+   - Drive with 7 MHz, 0.1-1 Vpp
+   - B-field at diamond: ~1-10 µT AC
+
+8. **Detection method: Amplitude modulation of ODMR**
+   - Set microwave frequency to slope of ODMR dip (maximum dF/df sensitivity)
+   - Apply 7 MHz signal to diamond
+   - **Mechanism:**
+     - 7 MHz E-field/B-field shifts NV spin levels at 7 MHz rate
+     - This shifts ODMR resonance frequency → fluorescence modulates at 7 MHz
+   - Monitor APD output on oscilloscope (AC coupling, 10 MHz BW)
+   - Observe 7 MHz sine wave synchronized with applied signal
+
+9. **Lock-in detection for improved SNR**
+   - Connect APD to lock-in amplifier input
+   - Reference: 7 MHz from function generator
+   - Lock-in measures amplitude of 7 MHz modulation
+   - Sensitivity: ~1 mV/cm for E-field, ~100 pT for B-field (with 1 Hz bandwidth)
+
+**Week 4: Testing with Amateur Radio 7 MHz CW**
+
+10. **Build receive antenna coupled to diamond**
+    - Small loop antenna (10 cm diameter, resonant at 7 MHz) placed near diamond
+    - Or capacitive coupling: 40m dipole → parallel plates with diamond between them
+
+11. **Monitor 7 MHz amateur band**
+    - RTL-SDR tuned to 7.000-7.300 MHz CW activity
+    - When CW transmission occurs, lock-in output shows step increase
+    - Morse code dots/dashes visible as amplitude changes
+
+12. **Spatial mapping (advanced)**
+    - Scan XYZ stage to map 7 MHz field distribution
+    - Create 2D/3D maps of E-field or B-field amplitude
+    - Resolution: ~500 nm (diffraction limit)
+    - Applications: Near-field imaging of antennas, circuits, transmission lines
+
+#### Expected Performance
+
+- **E-field sensitivity:** 1-10 mV/cm (room temperature, single NV)
+  - Can reach µV/cm with ensemble averaging or cryogenic cooling
+- **B-field sensitivity:** 10-100 pT (single NV), sub-pT (ensemble)
+- **Spatial resolution:** 500 nm (optical diffraction limit) to sub-nm (scanning probe)
+- **7 MHz detection:** Excellent - direct coupling to spin levels
+- **Bandwidth:** DC - several GHz (limited by NV spin relaxation, ~ms)
+- **Advantages:** Solid-state, room temp, nanoscale imaging, no drift
+
+#### Troubleshooting
+
+- **No fluorescence:** Laser wavelength wrong (must be 532 nm ±5 nm), misaligned optics, no NV centers (wrong diamond)
+- **No ODMR dip:** Microwave power too low/high, frequency wrong, NV centers photobleached
+- **Weak 7 MHz signal:** Poor coupling (electrodes/coil too far), NV not aligned with field, lock-in settings wrong
+- **Background noise:** Laser intensity noise (use balanced detection), vibration (isolate table), RF pickup
+
+#### Why NV Centers Excel for 7 MHz
+
+1. **Broad spectral response:** Unlike atomic hyperfine transitions (must match GHz), NV centers respond to any frequency that modulates their spin states
+2. **Room temperature operation:** No vapor cell, heater, vacuum needed
+3. **Spatial resolution:** Can map 7 MHz near-fields at sub-wavelength scale (λ @ 7 MHz = 43 m, but NV resolves to ~500 nm!)
+4. **Vectorial sensing:** NV centers along different crystallographic axes ([111] directions in diamond) sense different field components → full 3D vector reconstruction
+
+#### Applications Beyond 7 MHz CW Detection
+
+- **Biomedical:** Image RF heating in tissue (MRI safety, ablation therapy)
+- **Electronics:** Debug IC RF emissions, antenna design
+- **Quantum information:** Read out spin qubits, magnetic imaging of quantum materials
+- **Geophysics:** Sub-nT magnetometry for mineral prospecting
+
+#### Alternative: Ensemble NV Sensing (Lower Cost)
+
+For applications not requiring nanoscale resolution, use bulk diamond with high [NV⁻] density (~10-100 ppm):
+
+- **Cost:** $2k-$5k total (simpler optics, no scanning needed)
+- **Sensitivity:** 10× better (more NV centers → more signal)
+- **Spatial resolution:** ~10-100 µm (bulk measurement)
+- **Setup:** Simpler - just illuminate whole diamond, collect bulk fluorescence
+
+---
+
+## Summary of All Six Methods
+
+All six approaches can successfully detect 7 MHz CW signals (amateur radio 40-meter band), with varying sensitivity, cost, and complexity:
+
+| Method | Sensitivity | Cost | Complexity | Best For |
+|--------|-------------|------|------------|----------|
+| **1. Ground-State Hyperfine** | 1-10 mV/cm | $7k-$10k | Moderate | General RF sensing, research |
+| **2. CPT** | 5-50 mV/cm | $600-$3k | Low | Portable sensors, education |
+| **3. Faraday Rotation** | 3-30 mV/cm | $5k-$15k | Moderate | B-field sensing, HF/VHF ideal |
+| **4. Sodium Thermal** | 0.1-1 V/cm | $500-$1.5k | Low | Education, proof-of-concept |
+| **5. Atomic Clock Hack** | 10-100 mV/cm | $800-$2.5k | Low-Moderate | DIY, repurposing surplus |
+| **6. NV Diamond** | 1-10 mV/cm | $12k-$50k | High | Near-field imaging, solid-state |
+
+**Key Insight:** Even though 7 MHz is far below atomic transition frequencies (GHz range), all methods detect the signal via **second-order effects**: AC Stark shifts, light shifts, Zeeman modulation, or servo loop perturbations. With proper design, sensitivities in the mV/cm range are achievable - adequate for amateur radio reception within 50-100 km of transmitter.
+
+---
+
+## Performance Comparison Table
+
+| Sensor Type | Cost | E-Field Sensitivity | Frequency Range | Complexity | Best For |
+|-------------|------|-------------------|-----------------|------------|----------|
+| **Full Rydberg (2-laser EIT)** | $200k-$500k | 1-10 µV/cm | DC - THz | Very High | Ultimate sensitivity, research |
+| **Ground-State Hyperfine** | $7k-$10k | 1-10 mV/cm | DC - 10 GHz | Moderate | Practical RF sensing, education |
+| **Coherent Population Trapping** | $2k-$5k | 5-50 mV/cm | DC - 10 GHz | Low | Portable sensors, field deployment |
+| **Faraday Rotation** | $5k-$15k | 1-100 mV/cm (E), pT (B) | DC - GHz | Moderate | Magnetic sensing, imaging |
+| **Sodium Thermal Beam** | $500-$2k | 0.1-1 V/cm | MHz - GHz | Low | Teaching labs, demos |
+| **Surplus Rb Clock** | $1k-$3k | 10-100 mV/cm | MHz - 10 GHz | Low-Moderate | DIY projects, repurposing |
+| **NV Diamond** | $10k-$50k | ~1 mV/cm (E), pT (B) | DC - GHz | High | Nanoscale sensing, solid-state |
+
+---
+
+## Recommended Starting Path
+
+### For Researchers/Universities:
+1. **Start with simulations** (continue work in this repository - free!)
+2. **Build ground-state hyperfine sensor** ($10k budget)
+   - Proves atomic sensing principles
+   - Teaches laser stabilization, optics alignment, lock-in detection
+   - Useful for many practical applications
+3. **Partner with established labs** for Rydberg state experiments
+   - Share equipment access
+   - Collaborate on specific research questions
+
+### For Hobbyists/Makers:
+1. **Sodium vapor cell experiment** ($500-$2k)
+   - Demonstrates atomic physics fundamentals
+   - Safer than Rb/Cs (cheaper, less reactive)
+   - Can detect strong RF fields (cell phones, WiFi routers)
+2. **Surplus atomic clock modification** ($1k-$3k)
+   - Pre-built, reliable hardware
+   - Active online community (time-nuts mailing list)
+
+### For Industry Applications:
+1. **Evaluate sensitivity requirements**
+   - If >10 mV/cm sufficient → ground-state or CPT sensors
+   - If <1 mV/cm needed → partner with Rydberg specialists or NIST
+2. **Prototype with commercial modules**
+   - Several companies now offer Rydberg sensor products
+   - Examples: Rydberg Technologies, quantum sensing startups
+3. **Consider NV diamond** for solid-state applications
+   - Better for harsh environments, miniaturization
+
+---
+
+## DIY Build Guide: Ground-State Rb Sensor
+
+**Shopping List (Total: ~$8k):**
+
+| Item | Supplier | Part Number | Cost |
+|------|----------|-------------|------|
+| Rb-87 vapor cell (75 mm) | Thorlabs | GC19075-RB87 | $2,000 |
+| Used 780 nm ECDL laser | eBay/Surplus | Toptica DL100 (old model) | $3,000-$5,000 |
+| Photodiode module | Thorlabs | DET36A/M | $500 |
+| Cell heater | Thorlabs | GCH25-75 | $1,000 |
+| Temperature controller | Thorlabs | TC300 | $1,500 |
+| Optical mounts/posts | Thorlabs/Newport | Various (used) | $500 |
+| RF signal generator | eBay | HP 8647A (used) | $500-$1,000 |
+
+**Assembly Steps:**
+1. Mount vapor cell in heater, stabilize at 50-60°C
+2. Align laser beam through cell to photodiode
+3. Tune laser to Rb D2 line (780 nm), lock to atomic transition
+4. Apply RF field via nearby antenna or parallel-plate electrodes
+5. Monitor photodiode signal with lock-in amplifier or oscilloscope
+6. Calibrate: Plot signal vs. known RF field strength
+
+**Estimated Build Time:** 2-4 weeks (with prior optics experience)
+
+**Key Challenges:**
+- Laser frequency stabilization (use saturated absorption spectroscopy)
+- Temperature stability (±0.1°C needed)
+- RF shielding (prevent pickup in detection electronics)
+- Magnetic field cancellation (use Helmholtz coils or mu-metal shield)
+
+---
+
+## Connection to RAEFS Project Goals
+
+These low-cost alternatives enable:
+
+1. **Experimental validation** of simulations without massive capital investment
+2. **Educational outreach** - students can build working quantum sensors
+3. **Prototyping communication protocols** before scaling to Rydberg systems
+4. **Niche applications** where moderate sensitivity suffices (EMC testing, spectrum monitoring)
+5. **Technology development** - many innovations transfer to full Rydberg systems
+
+The sensitivity gap (1000×) may seem large, but many applications don't require µV/cm performance. For 5G/6G band monitoring, WiFi characterization, or near-field RF imaging, mV/cm sensitivity is adequate and offers much faster development cycles.
 
 ---
 
@@ -933,6 +2026,29 @@ See [Contributing](#contributing) section below for details.
 - **[penning_trap_epitrochoid.m](penning_trap_epitrochoid.m)** - Epitrochoidal motion analysis
 - **[holstein_model.m](holstein_model.m)** - Holstein Hamiltonian polaron energy and phonon statistics
 - **[holstein_numerical.py](holstein_numerical.py)** - Numerical diagonalization and verification
+
+### Educational Videos
+
+**"Rydberg Atom Based Sensors" - NIST Distinguished Lecture by Dr. Chris Holloway**
+- **Video**: [CECS Distinguished Speaker Series](https://www.youtube.com/watch?v=VIDEO_ID&t=574s) (~1 hour, Nov 2021)
+- **Speaker**: Dr. Chris Holloway, NIST Boulder (National Institute of Standards and Technology)
+
+**Key topics covered:**
+- **NIST's role in metrology** - Maintaining national/international measurement standards for fair commerce and scientific research
+- **Evolution of SI units** - The 2018 shift from physical artifacts (meter sticks, kilogram prototypes) to definitions based on fundamental constants of nature (e.g., Planck's constant)
+- **Rydberg atom-based E-field sensors** - Core technical content on using highly excited alkali atoms (rubidium) in vapor cells for electromagnetic field measurement
+- **Electromagnetically Induced Transparency (EIT)** - Laser-based optical readout technique enabling SI-traceable, self-calibrated measurements
+- **Advantages over traditional probes** - No field perturbation, broader bandwidth, smaller size, direct traceability to fundamental constants (~10% accuracy improvement)
+- **Historical development** - NIST's foundational work (2010), DARPA funding (2011+), and growth to 15-20 companies developing quantum sensor technologies
+- **Student opportunities** - NIST PREP (graduate) and SURF (undergraduate summer) research programs
+
+**Why this matters for RAEFS:**
+This lecture provides essential background on the real-world implementation and standardization of the exact technology this repository aims to simulate. Dr. Holloway's group at NIST pioneered the SI-traceable Rydberg sensor approach referenced throughout this project. The talk bridges fundamental atomic physics with practical metrology applications, offering context for why Rydberg sensors represent a paradigm shift from classical metal antennas.
+
+**Recommended viewing sequence:**
+- Start at ~12:00 for core Rydberg sensor physics
+- Review full talk for metrology context and historical perspective
+- Complements the included PDF documentation with visual explanations and experimental demonstrations
 
 ### External Resources
 - **NIST Rydberg Group**: [https://www.nist.gov/pml/electromagnetics/](https://www.nist.gov/pml/electromagnetics/)
